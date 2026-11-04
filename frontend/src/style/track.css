@@ -1,0 +1,38 @@
+.track-page{padding:60px 0;display:flex;justify-content:center}
+.track-card{width:100%;max-width:480px;background:#f7f1e8;padding:34px;border:1px solid var(--line)}
+.track-card.track-wide{max-width:760px}
+.track-card h1{font-family:'Playfair Display',serif;font-size:34px;font-weight:500;margin:10px 0}
+.track-card>p{color:var(--muted);font-size:15px;line-height:1.8}
+.track-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px}
+.track-steps{list-style:none;display:flex;margin:30px 0 10px;padding:0}
+.track-steps li{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;font-size:14px;color:var(--muted)}
+.track-steps li:not(:last-child):after{content:"";position:absolute;top:19px;left:calc(50% + 24px);width:calc(100% - 48px);height:2px;background:var(--line)}
+.track-steps li.done:not(:last-child):after{background:var(--sage)}
+.track-dot{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:white;border:2px solid var(--line);color:var(--muted)}
+.track-steps li.done .track-dot{background:var(--sage);border-color:var(--sage);color:white}
+.track-steps li.current .track-dot{background:var(--brown);border-color:var(--brown);color:white;box-shadow:0 0 0 5px #70452d22}
+.track-steps li.current b,.track-steps li.done b{color:var(--ink)}
+.track-message{text-align:center;font-size:18px;color:var(--brown-dark);margin:18px 0 4px}
+.track-live{text-align:center;font-size:13px;color:var(--muted)}
+.track-items{margin-top:22px;background:white;padding:16px 18px;border:1px solid var(--line)}
+.slip-row{display:flex;justify-content:space-between;gap:12px;font-size:15px;padding:5px 0}
+.slip-total{border-top:1px dashed var(--line);margin-top:6px;padding-top:10px;font-size:17px}
+.track-finish{text-align:center;margin-top:22px;font-size:15px;color:var(--muted)}
+.confirmation-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.confirmation-actions .button{margin-top:15px}
+
+/* receipt slip: hidden on screen, the only thing printed */
+.print-slip{display:none}
+@media print{
+  @page{margin:6mm}
+  body *{visibility:hidden}
+  .no-print{display:none!important}
+  .print-slip,.print-slip *{visibility:visible}
+  .print-slip{display:block;position:absolute;left:0;top:0;width:76mm;font-family:'Courier New',monospace;color:#000;font-size:12px}
+  .print-slip h2{text-align:center;margin:0;font-size:18px}
+  .print-slip .slip-sub,.print-slip .slip-thanks{text-align:center;margin:4px 0}
+  .print-slip hr{border:0;border-top:1px dashed #000;margin:8px 0}
+  .print-slip .slip-row{font-size:12px;padding:2px 0}
+  .print-slip .slip-notes{font-size:11px}
+}
+@media(max-width:600px){.track-card{padding:22px 16px}.track-card h1{font-size:28px}.track-steps li{font-size:9px}.track-dot{width:34px;height:34px}.track-steps li:not(:last-child):after{top:16px;left:calc(50% + 20px);width:calc(100% - 40px)}}

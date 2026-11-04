@@ -1,0 +1,24 @@
+# Render Blueprint: creates the API web service. Set the "sync: false" values in the Render dashboard.
+services:
+  - type: web
+    name: phakoes-coffee-shop-express-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ALLOWED_ORIGINS      # e.g. https://brewhaven.vercel.app
+        sync: false
+      - key: REDIS_URL            # free Upstash Redis (recommended on the free plan) - keeps data between restarts
+        sync: false
+      # Paid plan alternative to Redis: add a persistent disk mounted at /var/data and set DATA_FILE=/var/data/brewhaven-db.json

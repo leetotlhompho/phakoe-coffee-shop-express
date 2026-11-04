@@ -1,0 +1,20 @@
+{
+  "name": "phakoes-coffee-shop-express-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Phakoe's Coffee Shop Express REST API (Express + key-value NoSQL storage)",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": { "node": ">=18.17" },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "4.21.2"
+  },
+  "optionalDependencies": {
+    "ioredis": "5.4.2"
+  }
+}
