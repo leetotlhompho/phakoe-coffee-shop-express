@@ -1,6 +1,8 @@
 import { validationError } from "./errors.js";
 
 export const CATEGORIES = ["Coffee", "Tea", "Cold Drinks", "Pastries", "Food", "Other"];
+export const MAX_IMAGE_CHARS = 700_000; // ~500 KB photo
+export const LOCAL_IMAGE_RE = /^\/?images\/[\w\-. ()]+\.(jpe?g|png|webp|gif|avif)$/i;
 export const STATUSES = ["Pending", "Preparing", "Ready", "Collected"];
 
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
@@ -59,13 +61,25 @@ export function validateMenuItem(body, { partial = false } = {}) {
   if (has("image") || (!partial && body.image !== undefined)) {
     const img = body.image;
     if (img === null || img === "") out.image = "";
-    else if (typeof img !== "string" || img.length > 500) check.add("image", "image must be a web address of at most 500 characters, or empty.");
-    else {
-      try {
-        const u = new URL(img.trim());
-        if (!["http:", "https:"].includes(u.protocol)) throw new Error();
-        out.image = u.toString();
-      } catch { check.add("image", "image must be a valid http(s) web address, or empty."); }
+    else if (typeof img !== "string") check.add("image", "image must be a photo uploaded from your device, or empty.");
+    else if (img.startsWith("data:")) {
+      // Photo chosen from the device, sent as a small JPEG/PNG/WEBP data URL.
+      if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(img)) check.add("image", "image must be a JPG, PNG or WEBP photo.");
+      else if (img.length > MAX_IMAGE_CHARS) check.add("image", "That photo is too large after processing. Please choose a smaller one.");
+      else out.image = img;
+    } else if (LOCAL_IMAGE_RE.test(img.trim()) && !img.includes("..")) {
+      // A photo kept in the project's images folder, e.g. "images/water.jpg".
+      out.image = img.trim().replace(/^\/+/, "");
+    } else {
+      // Photos already saved earlier as web addresses keep working; new ones come from the device.
+      if (img.length > 500) check.add("image", "image must be a photo uploaded from your device, or empty.");
+      else {
+        try {
+          const u = new URL(img.trim());
+          if (!["http:", "https:"].includes(u.protocol)) throw new Error();
+          out.image = u.toString();
+        } catch { check.add("image", "image must be a photo uploaded from your device, or empty."); }
+      }
     }
   } else if (!partial) out.image = "";
 
@@ -143,4 +157,16 @@ export function validateStaffInput(body) {
   else if (pw.length < 8 || pw.length > 100) check.add("password", "password must be 8 to 100 characters.");
   check.done();
   return { name, email, password: pw };
+}
+
+/** Body of POST /api/auth/change-password */
+export function validateChangePassword(body) {
+  ensureBody(body);
+  const check = new Check();
+  const { currentPassword, newPassword } = body;
+  if (typeof currentPassword !== "string" || !currentPassword) check.add("currentPassword", "Enter your current password.");
+  if (typeof newPassword !== "string") check.add("newPassword", "Enter a new password.");
+  else if (newPassword.length < 8 || newPassword.length > 100) check.add("newPassword", "The new password must be 8 to 100 characters.");
+  check.done();
+  return { currentPassword: currentPassword.slice(0, 200), newPassword };
 }

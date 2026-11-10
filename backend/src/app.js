@@ -15,7 +15,7 @@ export function createApp({ store, config }) {
 
   app.use(securityHeaders);
   app.use(cors(config.allowedOrigins));
-  app.use(express.json({ limit: "20kb" }));
+  app.use(express.json({ limit: "1mb" }));
 
   const ctx = { store, config };
   const auth = createAuth(ctx);

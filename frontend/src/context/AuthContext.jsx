@@ -58,8 +58,20 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // Changes the password of the person who is signed in. The server sends back a fresh token.
+  async function changePassword(currentPassword, newPassword) {
+    try {
+      const result = await api.post("/api/auth/change-password", { currentPassword, newPassword });
+      setToken(result.token);
+      setUser(result.user);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, message: describeError(err) };
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, ready, users: staff, login, logout, addStaff, removeStaff }}>
+    <AuthContext.Provider value={{ user, ready, users: staff, login, logout, addStaff, removeStaff, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

@@ -134,7 +134,23 @@ test("menu validation returns 400 with field details", async () => {
   assert.equal((await call("POST", "/api/menu", { token: staffToken, raw: "{not json" })).json.error.code, "INVALID_JSON");
   assert.equal((await call("POST", "/api/menu", { token: staffToken, body: [1, 2] })).status, 400);
   assert.equal((await call("POST", "/api/menu", { token: staffToken, body: { name: "A", description: "B", category: "Tea", price: 1.234 } })).status, 400);
-  assert.equal((await call("POST", "/api/menu", { token: staffToken, raw: JSON.stringify({ description: "x".repeat(30000) }) })).status, 413);
+  assert.equal((await call("POST", "/api/menu", { token: staffToken, raw: JSON.stringify({ description: "x".repeat(1_200_000) }) })).status, 413);
+});
+
+test("menu items accept a photo from the device (data URL) and reject other junk", async () => {
+  const tiny = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBD";
+  const ok = await call("POST", "/api/menu", { token: staffToken, body: { name: "Photo Latte", description: "d", category: "Coffee", price: 5, image: tiny } });
+  assert.equal(ok.status, 201);
+  assert.equal(ok.json.image, tiny);
+  const local = await call("POST", "/api/menu", { token: staffToken, body: { name: "Water", description: "d", category: "Other", price: 12, image: "images/water.jpg" } });
+  assert.equal(local.status, 201);
+  assert.equal(local.json.image, "images/water.jpg");
+  const trav = await call("POST", "/api/menu", { token: staffToken, body: { name: "Bad2", description: "d", category: "Other", price: 12, image: "images/../secret.jpg" } });
+  assert.equal(trav.status, 400);
+  const svg = await call("POST", "/api/menu", { token: staffToken, body: { name: "Bad", description: "d", category: "Coffee", price: 5, image: "data:image/svg+xml;base64,PHN2Zz4=" } });
+  assert.equal(svg.status, 400);
+  const big = await call("POST", "/api/menu", { token: staffToken, body: { name: "Big", description: "d", category: "Coffee", price: 5, image: "data:image/jpeg;base64," + "A".repeat(800_000) } });
+  assert.equal(big.status, 400);
 });
 
 test("staff can add, update (incl. availability) and delete menu items; photo stays empty when not given", async () => {
@@ -261,4 +277,25 @@ test("everything persists after the server restarts", async () => {
   assert.equal((await login("admin@test.local", "AdminPass1!")).status, 200);
   // seeding must not run twice
   assert.equal((await call("GET", "/api/menu")).json.length, before.menu);
+});
+
+test("signed-in people can change their own password", async () => {
+  const login2 = async (email, password) => call("POST", "/api/auth/login", { body: { email, password } });
+  const fresh = (await login2("admin@test.local", "AdminPass1!")).json?.token ?? adminToken;
+  // wrong current password is a normal error, not a sign-out
+  const wrong = await call("POST", "/api/auth/change-password", { token: fresh, body: { currentPassword: "nope", newPassword: "NewPass123" } });
+  assert.equal(wrong.status, 400);
+  // too short / same as current
+  assert.equal((await call("POST", "/api/auth/change-password", { token: fresh, body: { currentPassword: "AdminPass1!", newPassword: "short" } })).status, 400);
+  assert.equal((await call("POST", "/api/auth/change-password", { token: fresh, body: { currentPassword: "AdminPass1!", newPassword: "AdminPass1!" } })).status, 400);
+  // not signed in
+  assert.equal((await call("POST", "/api/auth/change-password", { body: { currentPassword: "AdminPass1!", newPassword: "NewPass123" } })).status, 401);
+  // works, returns a new token, old password and old token stop working
+  const ok = await call("POST", "/api/auth/change-password", { token: fresh, body: { currentPassword: "AdminPass1!", newPassword: "NewPass123" } });
+  assert.equal(ok.status, 200);
+  assert.ok(ok.json.token);
+  assert.equal(ok.json.user.mustChangePassword, false);
+  assert.equal((await login2("admin@test.local", "AdminPass1!")).status, 401);
+  assert.equal((await login2("admin@test.local", "NewPass123")).status, 200);
+  assert.equal((await call("GET", "/api/auth/me", { token: ok.json.token })).status, 200);
 });

@@ -1,89 +1,181 @@
-# Phakoe's Coffee Shop Express - full stack
+# Phakoe's Coffee Shop Express
+
+A full-stack coffee shop website: customers browse the menu, fill a cart and place an order for pickup;
+staff manage the menu and move orders through their stages; the administrator manages staff accounts.
+
+## Project links
+
+| | Link |
+|---|---|
+| GitHub repository | https://github.com/leetotlhompho/phakoe-coffee-shop-express |
+| Deployed frontend (React, Vercel / Netlify) | `PASTE-YOUR-FRONTEND-URL-HERE` |
+| Deployed backend API (Express, Render) | `PASTE-YOUR-BACKEND-URL-HERE`  (health check: `/api/health`) |
 
 ```
-React (Vercel / Netlify)  --fetch-->  Express.js REST API (Render)  -->  Key-value NoSQL database
-        /frontend                              /backend                   (Redis, or a JSON key-value file)
+React (Vercel / Netlify)  --fetch-->  Express.js REST API (Render)  -->  Key-value NoSQL database (Redis)
+        /frontend                              /backend                          (Upstash)
 ```
 
-## What is in the box
+## Technologies
+
+| Layer | Technology | Hosting |
+|---|---|---|
+| Frontend | React 18, Vite, React Router, lucide-react icons, plain CSS | Vercel or Netlify |
+| Backend | Node.js, Express.js (REST API), scrypt password hashing, signed bearer tokens (HS256) | Render |
+| Database | Key-value NoSQL: **Redis** (Upstash, persistent) via `ioredis`; a JSON-file key-value store is used for local development | Upstash |
+| Tests | Node's built-in test runner (`node --test`) | - |
+
+## Features
+
+**Customers**
+- Menu with categories, photos, prices and availability
+- Shopping cart and an order form (name, notes); the order is priced by the server
+- Order tracking with the order number and name
+
+**Staff / administrator**
+- Sign in to the staff dashboard
+- Orders list with status updates: `Pending -> Preparing -> Ready -> Collected`
+- Add, edit, hide (availability) and delete menu items, with photos chosen from the device
+- Change your own password (the first administrator is reminded to replace the starting password)
+- Administrator only: create and remove staff accounts
+
+## Folder structure
+
 | Folder | What it is |
 |---|---|
-| `frontend/` | React + Vite website: customer menu/cart/order tracking and the staff/admin dashboard |
-| `backend/`  | Express REST API, validation, authentication, key-value storage, automated tests |
-| `render.yaml` | Render blueprint for the API |
+| `frontend/` | React + Vite website (customer pages and staff dashboard) |
+| `backend/` | Express REST API, validation, authentication, storage layer, automated tests |
+| `images/` | Optional menu photos kept in the project (see "Menu photos") |
+| `render.yaml` | Render blueprint that creates the API service |
 
-## Run it locally
-**Terminal 1 - API**
+## Installation (run it on your computer)
+
+Requirements: Node.js 18.17 or newer and npm.
+
+**1. Get the code**
+```bash
+git clone https://github.com/leetotlhompho/phakoe-coffee-shop-express.git
+cd phakoe-coffee-shop-express
+```
+
+**2. Start the API (terminal 1)**
 ```bash
 cd backend
 npm install
-cp .env.example .env     # optional; sensible development defaults exist
-npm start                # http://localhost:4000  (npm run dev reloads on changes)
+cp .env.example .env      # optional; development defaults exist
+npm start                 # http://localhost:4000   (npm run dev reloads on changes)
 ```
-**Terminal 2 - website**
+
+**3. Start the website (terminal 2)**
 ```bash
 cd frontend
-cp .env.example .env     # VITE_API_URL=http://localhost:4000
+cp .env.example .env      # VITE_API_URL=http://localhost:4000
 npm install
-npm run dev              # http://localhost:5173
+npm run dev               # http://localhost:5173
 ```
-Development admin login: `admin@brewhaven.local` / `Admin123!` (created automatically on first start).
-Staff accounts are created by the administrator in the dashboard (Staff accounts tab).
 
-Run the API tests: `cd backend && npm test`
+**4. Sign in** at `/staff` with the development administrator `admin@brewhaven.local` / `Admin123!`
+(created automatically on first start; the sample menu is loaded once at the same time).
 
-## Data storage (requirement C)
-* **Key-value NoSQL**: every record is a JSON document stored under a key - `menu:<id>`, `order:<id>`, `user:<id>`, `email:<address>`.
-* **Unique IDs**: menu items and users get a random UUID (`menu_...`, `user_...`). Orders get a short readable number such as
-  `BH-7K3M9Q`, generated from a random alphabet without confusing characters and created with an atomic "only if the key does not exist"
-  write, so two orders can never share a number.
-* **Persistence across restarts**: two interchangeable back ends behind one interface (`backend/src/db`):
-  1. **Redis** (set `REDIS_URL`, e.g. free Upstash) - data lives outside the web server. *Recommended on Render's free plan.*
-  2. **File store** (default, `DATA_FILE`) - memory plus an atomically written JSON file. On Render this survives restarts only
-     with a paid **persistent disk** (the free plan's disk is wiped).
-* The first start loads a sample menu once and creates the first administrator from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+**5. Run the tests**
+```bash
+cd backend
+npm test
+```
+
+### Environment variables (backend)
+
+| Variable | Purpose |
+|---|---|
+| `NODE_ENV` | `production` on Render |
+| `PORT` | Port the API listens on (Render sets it) |
+| `JWT_SECRET` | Long random string (32+ characters). Required in production |
+| `TOKEN_TTL_HOURS` | How long a sign-in lasts (default 8) |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | First administrator, created when no admin exists. Required in production |
+| `ALLOWED_ORIGINS` | Website address(es) allowed to call the API, comma separated; `https://*.vercel.app` wildcards work |
+| `REDIS_URL` | `rediss://...` address of the Redis database. When set, it replaces the file store |
+| `DATA_FILE` | Path of the JSON file store used when `REDIS_URL` is not set (local development) |
+
+Frontend: `VITE_API_URL` = address of the API (`http://localhost:4000` locally, your Render URL when deployed).
+
+## Data storage (key-value NoSQL)
+
+Every record is a JSON value stored under a unique key:
+
+| Key | Value |
+|---|---|
+| `menu:<id>` | one menu item (`name`, `category`, `description`, `price`, `image`, `badge`, `available`) |
+| `order:<id>` | one order (customer name, notes, items with quantity and price, total, status, timestamps) |
+| `user:<id>` | one staff account (name, email, role, salted password hash) |
+| `email:<address>` | lookup from an email address to its user |
+
+- **Unique keys:** menu items and users get a random UUID. Orders get a short readable number such as `BH-7K3M9Q`, created with an atomic "only if the key does not exist" write, so two orders can never share a number.
+- **Persistence:** with `REDIS_URL` set, all data lives in Redis (Upstash), outside the web server, so it survives restarts and redeploys. Without it, the API falls back to a JSON file (development only; Render's free disk is wiped on restart).
 
 ## REST API
+
 All responses are JSON. Errors always look like `{ "error": { "code", "message", "details"? } }`.
+"Staff" means a signed-in staff member or administrator; send the token as `Authorization: Bearer <token>`.
 
 | Method | Endpoint | Purpose | Access |
 |---|---|---|---|
-| GET | `/api/health` | API + database check | public |
+| GET | `/api/health` | API and database check | public |
 | GET | `/api/menu` | all menu items | public |
 | GET | `/api/menu/:id` | one menu item | public |
-| POST | `/api/menu` | add item (201) | staff / admin |
-| PUT | `/api/menu/:id` | update name, price, description, category, photo, availability (partial updates allowed) | staff / admin |
-| DELETE | `/api/menu/:id` | delete item (204) | staff / admin |
-| GET | `/api/orders` | all orders, newest first (`?status=Pending`) | staff / admin |
-| GET | `/api/orders/:id` | one order. Customers must add `?customerName=<name on the order>` | public with name, or staff |
+| POST | `/api/menu` | add a menu item (201) | staff |
+| PUT | `/api/menu/:id` | update name, price, description, category, photo, availability (partial updates allowed) | staff |
+| DELETE | `/api/menu/:id` | delete a menu item (204) | staff |
+| GET | `/api/orders` | all orders, newest first (`?status=Pending`) | staff |
+| GET | `/api/orders/:id` | one order. Customers add `?customerName=<name on the order>` | public with name, or staff |
 | POST | `/api/orders` | place an order (201) | public |
-| PATCH | `/api/orders/:id/status` | `Pending`, `Preparing`, `Ready`, `Collected` | staff / admin |
-| POST | `/api/auth/login` | email + password -> token | public |
-| GET | `/api/auth/me` | current user | staff / admin |
-| GET / POST / DELETE | `/api/staff`, `/api/staff/:id` | list, create, remove staff accounts | admin only |
+| PATCH | `/api/orders/:id/status` | set status: `Pending`, `Preparing`, `Ready`, `Collected` | staff |
+| POST | `/api/auth/login` | email + password, returns a token | public |
+| GET | `/api/auth/me` | the signed-in user | staff |
+| POST | `/api/auth/change-password` | `{ currentPassword, newPassword }`, returns a fresh token | staff |
+| GET | `/api/staff` | list staff accounts | admin |
+| POST | `/api/staff` | create a staff account | admin |
+| DELETE | `/api/staff/:id` | remove a staff account | admin |
 
-Status codes used: 200, 201, 204, 400 (validation / bad JSON), 401 (not signed in), 403 (wrong role), 404, 409 (duplicate email,
-unavailable items), 413 (body too large), 429 (too many attempts), 500.
+**Example: place an order**
+```http
+POST /api/orders
+{ "customerName": "Thabo", "notes": "No sugar", "items": [ { "id": "menu_abc123", "quantity": 2 } ] }
+```
+The server ignores any price sent by the browser: it prices every order from the stored menu and rejects unknown or unavailable items.
 
-**Validation**: names, descriptions, categories, prices (>0, 2 decimals), photo URLs (http/https or empty), availability (boolean),
-quantities (1-99), emails and password length are all checked on the server. The server ignores prices sent by the browser - it prices
-every order from the stored menu and rejects unavailable or unknown items.
+**Example: update an order status**
+```http
+PATCH /api/orders/BH-7K3M9Q/status
+Authorization: Bearer <token>
+{ "status": "Preparing" }
+```
 
-**Security**: passwords are stored as salted `scrypt` hashes; sign-in returns a signed, expiring bearer token (HS256);
-roles are read from the database on every request, so removing a staff member locks them out immediately; login attempts and order
-submissions are rate limited; CORS only allows `ALLOWED_ORIGINS`; request bodies are capped at 20 KB.
+Status codes used: 200, 201, 204, 400 (validation or bad JSON), 401 (not signed in), 403 (wrong role), 404, 409 (duplicate email, unavailable items), 413 (body too large), 429 (too many attempts), 500.
 
-## Deploy
-1. **Database (free)**: create a free Redis at https://upstash.com and copy its `rediss://...` URL.
-2. **API on Render**: New > Blueprint (uses `render.yaml`) or a Web Service with root directory `backend`, build `npm install`, start `npm start`.
-   Environment variables: `NODE_ENV=production`, `JWT_SECRET` (32+ random characters), `ADMIN_EMAIL`, `ADMIN_PASSWORD`
-   (8+ characters), `REDIS_URL`, `ALLOWED_ORIGINS` (your site URL; wildcards such as `https://*.vercel.app` work).
-   Check `https://<your-api>.onrender.com/api/health`. The free plan sleeps when idle, so the first request can take about a minute.
-3. **Website on Vercel or Netlify**: root directory `frontend`, build `npm run build`, output `dist`, environment variable
-   `VITE_API_URL=https://<your-api>.onrender.com`. (`vercel.json` and `public/_redirects` already make page refreshes work.)
-4. Put the website's final URL into `ALLOWED_ORIGINS` on Render and redeploy.
+### Validation and security
+- The server checks names, descriptions, categories (`Coffee`, `Tea`, `Cold Drinks`, `Pastries`, `Food`, `Other`), prices (more than 0, two decimals), photos, availability, quantities (1-99), emails and password length (8-100).
+- Passwords are stored as salted `scrypt` hashes. Sign-in returns a signed, expiring token. Changing a password signs out every older session.
+- Roles are read from the database on every request, so removing a staff member locks them out at once.
+- Login, password-change and order submissions are rate limited. CORS only allows `ALLOWED_ORIGINS`. Request bodies are capped at 1 MB.
 
-## Honest limits
-* One API instance is assumed (the file store and rate limiter live in that process).
-* The token is kept in the browser tab's `sessionStorage`; a real production site would add HTTPS-only cookies, password reset and audit logs.
-* The customer "login" (name + order number) is a lookup key, not a secret; anyone who knows both can see that order.
+## Menu photos
+
+A menu item's `image` can be:
+1. **A photo from your device** - in the staff dashboard use *Choose photo from device*. The browser shrinks it and it is saved with the item (JPG, PNG or WEBP, about 500 KB at most).
+2. **A file in the project** - put it in `images/` (for example `images/water.jpg`) and set `"image": "images/water.jpg"`. If the frontend is deployed with root directory `frontend`, also copy the photos into `frontend/public/images/`.
+3. **A web address** (`https://...`) - older items keep working.
+
+## Deployment
+
+1. **Database (Upstash):** create a free Redis database at https://upstash.com and copy its `rediss://...` connection URL.
+2. **API (Render):** *New > Blueprint* and choose the repository (it reads `render.yaml`), or create a Web Service with root directory `backend`, build command `npm install`, start command `npm start`. Set `NODE_ENV=production`, `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `REDIS_URL` and `ALLOWED_ORIGINS`. Check `https://<your-api>.onrender.com/api/health`.
+3. **Website (Vercel or Netlify):** root/base directory `frontend`, build command `npm run build`, output directory `dist`, environment variable `VITE_API_URL=https://<your-api>.onrender.com`. (`vercel.json` and `public/_redirects` make page refreshes work.)
+4. Put the website's final address into `ALLOWED_ORIGINS` on Render (no trailing `/`) so the API accepts it. Redeploy the website whenever `VITE_API_URL` changes, because it is built into the site.
+
+Notes: Render's free web service sleeps after about 15 minutes without visitors, so the first request afterwards can take about a minute. Render's own free Key Value instance is memory-only and loses its data on restart, so use Upstash (or a paid Render Key Value instance) for persistence.
+
+## Limits
+
+- One API instance is assumed (the rate limiter lives in that process).
+- The sign-in token is kept in the browser tab's `sessionStorage`; a larger production site would add HTTPS-only cookies, password reset by email and audit logs.
+- The customer "login" for tracking (name + order number) is a lookup key, not a secret.

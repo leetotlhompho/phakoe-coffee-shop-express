@@ -1,6 +1,7 @@
+import { photoSrc } from "../photo.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { CircleDollarSign, ClipboardList, Clock3, Coffee, PackagePlus, Search, ShieldCheck, Trash2, Users } from "lucide-react";
+import { CircleDollarSign, ClipboardList, Clock3, Coffee, KeyRound, PackagePlus, Search, ShieldCheck, Trash2, Users } from "lucide-react";
 import { api, describeError } from "../api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useShop } from "../context/ShopContext.jsx";
@@ -8,10 +9,39 @@ import { categories } from "../data/categories.js";
 import "../style/staff.css";
 
 const STATUSES = ["Pending", "Preparing", "Ready", "Collected"];
+
+// Reads a photo picked from this device (SSD / phone storage) and shrinks it so it stays small to save.
+const MAX_PHOTO_SIZE = 12 * 1024 * 1024; // 12 MB original limit
+function readPhotoFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) return reject(new Error("Please choose an image file (JPG, PNG or WEBP)."));
+    if (file.size > MAX_PHOTO_SIZE) return reject(new Error("That photo is too large. Please choose one under 12 MB."));
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read that photo."));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("That file could not be opened as a photo."));
+      img.onload = () => {
+        const scale = Math.min(1, 900 / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 const emptyItem = { name: "", category: "Coffee", description: "", price: "", image: "", available: true };
 
 export default function StaffDashboard() {
-  const { user, ready, users, addStaff, removeStaff } = useAuth();
+  const { user, ready, users, addStaff, removeStaff, changePassword } = useAuth();
   const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem } = useShop();
 
   const [orders, setOrders] = useState([]);
@@ -23,6 +53,8 @@ export default function StaffDashboard() {
   const [itemForm, setItemForm] = useState(emptyItem);
   const [staffForm, setStaffForm] = useState({ name: "", email: "", password: "" });
   const [busy, setBusy] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwMessage, setPwMessage] = useState(null); // { ok, text }
 
   const loadOrders = useCallback(async () => {
     try {
@@ -90,7 +122,7 @@ export default function StaffDashboard() {
       category: itemForm.category,
       description: itemForm.description,
       price: Number(itemForm.price),
-      image: itemForm.image.trim(), // left empty when no photo address is given
+      image: itemForm.image, // photo chosen from this device, empty when none
       available: itemForm.available,
     };
     const ok = await run(() => (editing ? updateMenuItem(editing, item) : addMenuItem(item)), editing ? "Menu item updated." : "Menu item added.");
@@ -116,6 +148,32 @@ export default function StaffDashboard() {
     if (result.ok) setStaffForm({ name: "", email: "", password: "" });
   }
 
+  async function choosePhoto(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ""; // allows picking the same file again
+    if (!file) return;
+    try {
+      const dataUrl = await readPhotoFile(file);
+      setItemForm((f) => ({ ...f, image: dataUrl }));
+    } catch (err) {
+      setNotice(err.message);
+    }
+  }
+
+  async function submitPassword(e) {
+    e.preventDefault();
+    if (pwForm.next !== pwForm.confirm) return setPwMessage({ ok: false, text: "The new password and its confirmation do not match." });
+    setBusy(true);
+    const result = await changePassword(pwForm.current, pwForm.next);
+    setBusy(false);
+    if (result.ok) {
+      setPwForm({ current: "", next: "", confirm: "" });
+      setPwMessage({ ok: true, text: "Your password has been changed." });
+    } else {
+      setPwMessage({ ok: false, text: result.message });
+    }
+  }
+
   const set = (field) => (e) => setItemForm({ ...itemForm, [field]: e.target.value });
 
   return (
@@ -128,6 +186,13 @@ export default function StaffDashboard() {
         </div>
         <span className="role-badge">{isAdmin ? <ShieldCheck size={15} /> : <Coffee size={15} />} {user.role.toUpperCase()}</span>
       </div>
+
+      {user.mustChangePassword && tab !== "password" && (
+        <div className="form-notice password-warning">
+          <span><KeyRound size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />You are still using the starting password. Please change it now to keep the shop safe.</span>
+          <button className="button button-primary" onClick={() => { setPwMessage(null); setTab("password"); }}>Change password</button>
+        </div>
+      )}
 
       {notice && <div className="form-notice"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div>}
 
@@ -143,6 +208,7 @@ export default function StaffDashboard() {
         <button className={tab === "menu" ? "active" : ""} onClick={() => setTab("menu")}>Manage menu</button>
         <button className={tab === "summary" ? "active" : ""} onClick={() => setTab("summary")}>Daily summary</button>
         {isAdmin && <button className={tab === "team" ? "active" : ""} onClick={() => setTab("team")}>Staff accounts</button>}
+        <button className={tab === "password" ? "active" : ""} onClick={() => { setPwMessage(null); setTab("password"); }}>Change password</button>
       </div>
 
       {tab === "orders" && (
@@ -188,7 +254,16 @@ export default function StaffDashboard() {
             <label>Item name<input required maxLength={80} value={itemForm.name} onChange={set("name")} /></label>
             <label>Category<select value={itemForm.category} onChange={set("category")}>{categories.map((c) => <option key={c}>{c}</option>)}</select></label>
             <label>Price (M)<input type="number" min="0.01" step="0.01" required value={itemForm.price} onChange={set("price")} /></label>
-            <label>Photo URL (optional, leave empty for no photo)<input value={itemForm.image} onChange={set("image")} placeholder="https://..." /></label>
+            <div className="photo-picker form-wide">
+              <span className="photo-picker-label">Photo (optional, chosen from this device)</span>
+              <div className="photo-picker-row">
+                {itemForm.image ? <img className="photo-preview" src={photoSrc(itemForm.image)} alt="Selected item" /> : <div className="photo-preview photo-preview-empty">No photo</div>}
+                <div className="photo-picker-actions">
+                  <label className="button button-outline photo-choose">{itemForm.image ? "Change photo" : "Choose photo from device"}<input type="file" accept="image/*" onChange={choosePhoto} hidden /></label>
+                  {itemForm.image && <button type="button" className="button button-outline" onClick={() => setItemForm({ ...itemForm, image: "" })}>Remove photo</button>}
+                </div>
+              </div>
+            </div>
             <label className="form-wide">Description<textarea required maxLength={300} rows="2" value={itemForm.description} onChange={set("description")} /></label>
             <label className="availability-check"><input type="checkbox" checked={itemForm.available} onChange={(e) => setItemForm({ ...itemForm, available: e.target.checked })} /> Available for customers</label>
             <div className="form-actions">
@@ -242,6 +317,19 @@ export default function StaffDashboard() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {tab === "password" && (
+        <div className="staff-orders-panel">
+          <div className="staff-orders-heading"><div><h2><KeyRound size={20} style={{ verticalAlign: "middle", marginRight: 8 }} />Change password</h2><p>Signed in as {user.email}. Enter your current password, then choose a new one (8 to 100 characters).</p></div></div>
+          <form className="staff-form item-form" onSubmit={submitPassword}>
+            <label>Current password<input type="password" autoComplete="current-password" required value={pwForm.current} onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })} /></label>
+            <label>New password<input type="password" autoComplete="new-password" minLength={8} maxLength={100} required value={pwForm.next} onChange={(e) => setPwForm({ ...pwForm, next: e.target.value })} /></label>
+            <label>Confirm new password<input type="password" autoComplete="new-password" minLength={8} maxLength={100} required value={pwForm.confirm} onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })} /></label>
+            {pwMessage && <p className={pwMessage.ok ? "pw-message pw-ok" : "pw-message pw-error"} role="status">{pwMessage.text}</p>}
+            <div className="form-actions"><button className="button button-primary" type="submit" disabled={busy}>{busy ? "Saving..." : "Change password"}</button></div>
+          </form>
         </div>
       )}
 

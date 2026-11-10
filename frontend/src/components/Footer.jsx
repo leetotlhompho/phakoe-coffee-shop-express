@@ -10,7 +10,7 @@ export default function Footer() {
           <p>Good coffee, kind people, and little moments worth slowing down for.</p>
         </div>
         <div><h4>Explore</h4><Link to="/menu">Our menu</Link><Link to="/track">Track your order</Link><Link to="/about">Our story</Link><Link to="/staff">Staff dashboard</Link></div>
-        <div><h4>Come say hello</h4><p><MapPin size={15} /> Maseru, Lesotho</p><p><Phone size={15} /> +266 0000 0000</p><p><AtSign size={15} /> @phakoescoffeeshop</p></div>
+        <div><h4>Come say hello</h4><p><MapPin size={15} /> Maseru, Lesotho</p><p><Phone size={15} /> +266 5640 2093</p><p><AtSign size={15} /> Marketing@phakoescoffeeshop.ac.ls</p></div>
       </div>
       <div className="footer-bottom">© 2026 Phakoe's Coffee Shop Express · Student project demonstration</div>
     </footer>

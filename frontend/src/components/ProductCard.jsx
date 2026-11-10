@@ -1,13 +1,18 @@
+import { useState } from "react";
 import { Plus } from "lucide-react";
+import { photoSrc } from "../photo.js";
 import { useShop } from "../context/ShopContext.jsx";
 
 export default function ProductCard({ item }) {
   const { addToCart } = useShop();
   const available = item.available !== false;
+  // Tall or square photos (like a bottle) are shown whole instead of being cropped.
+  const [tall, setTall] = useState(false);
+  const checkShape = (e) => setTall(e.target.naturalWidth / e.target.naturalHeight < 1.25);
   return (
     <article className={`product-card ${available ? "" : "is-unavailable"}`}>
-      <div className={`product-photo ${item.image ? "" : "no-photo"}`}>
-        {item.image && <img src={item.image} alt={item.name} loading="lazy" />}
+      <div className={`product-photo ${item.image ? "" : "no-photo"} ${tall ? "is-tall" : ""}`} style={tall ? { "--photo": `url("${photoSrc(item.image)}")` } : undefined}>
+        {item.image && <img src={photoSrc(item.image)} alt={item.name} loading="lazy" onLoad={checkShape} />}
         {item.badge && available && <span className="product-badge">{item.badge}</span>}
         {!available && <span className="product-badge unavailable-badge">Sold out</span>}
       </div>

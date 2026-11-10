@@ -3,7 +3,7 @@ import { verifyToken } from "../utils/security.js";
 import { isSafeId } from "../utils/ids.js";
 import { wrap } from "./common.js";
 
-export const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.createdAt });
+export const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.createdAt, mustChangePassword: u.mustChangePassword === true });
 
 /**
  * Authentication (who are you?) and authorisation (are you allowed?).
@@ -16,7 +16,10 @@ export function createAuth({ store, config }) {
     if (!header.startsWith("Bearer ")) return null;
     const payload = verifyToken(header.slice(7), config.jwtSecret);
     if (!payload || !isSafeId(payload.sub)) return null;
-    return store.get(`user:${payload.sub}`);
+    const user = await store.get(`user:${payload.sub}`);
+    // A token issued before the last password change is no longer valid.
+    if (user && (payload.pv || 0) !== (user.passwordVersion || 0)) return null;
+    return user;
   }
 
   /** Requires a signed-in staff member or administrator. */

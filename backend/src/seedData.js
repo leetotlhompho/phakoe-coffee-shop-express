@@ -5,7 +5,7 @@ export const seedMenu = [
     "category": "Coffee",
     "description": "Double espresso with steamed milk and a soft layer of foam.",
     "price": 35,
-    "image": "https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=900&q=85",
+    "image": " https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=900&q=85",
     "badge": "Bestseller",
     "available": true
   },
@@ -23,7 +23,7 @@ export const seedMenu = [
     "category": "Coffee",
     "description": "Rich espresso topped with hot water for a clean finish.",
     "price": 30,
-    "image": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=900&q=85",
+    "image": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=900&q=85 ",
     "badge": "",
     "available": true
   },
@@ -32,7 +32,7 @@ export const seedMenu = [
     "category": "Cold Drinks",
     "description": "Chilled coffee served over ice for a refreshing pick-me-up.",
     "price": 38,
-    "image": "https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=900&q=85",
+    "image": "https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=900&q=85 ",
     "badge": "Chilled",
     "available": true
   },
@@ -41,7 +41,7 @@ export const seedMenu = [
     "category": "Tea",
     "description": "A comforting, freshly brewed cup with a rich, familiar taste.",
     "price": 20,
-    "image": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=900&q=85",
+    "image": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=900&q=85 ",
     "badge": "",
     "available": true
   },
@@ -50,7 +50,7 @@ export const seedMenu = [
     "category": "Pastries",
     "description": "Golden, flaky pastry with a delicious chocolate centre.",
     "price": 25,
-    "image": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=900&q=85",
+    "image": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=900&q=85 ",
     "badge": "Freshly baked",
     "available": true
   },
@@ -59,7 +59,7 @@ export const seedMenu = [
     "category": "Pastries",
     "description": "Soft cinnamon swirls finished with a light sweet glaze.",
     "price": 28,
-    "image": "https://images.unsplash.com/photo-1509365465985-25d11c17e812?auto=format&fit=crop&w=900&q=85",
+    "image": "https://images.unsplash.com/photo-1509365465985-25d11c17e812?auto=format&fit=crop&w=900&q=85 ",
     "badge": "",
     "available": true
   },
@@ -68,7 +68,7 @@ export const seedMenu = [
     "category": "Cold Drinks",
     "description": "A cool, creamy blended drink with a hint of vanilla.",
     "price": 42,
-    "image": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=900&q=85",
+    "image": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=900&q=85 ",
     "badge": "",
     "available": true
   },
@@ -77,7 +77,7 @@ export const seedMenu = [
     "category": "Food",
     "description": "Toasted bread layered with chicken, egg, lettuce and tomato.",
     "price": 55,
-    "image": "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=900&q=85",
+    "image": "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=900&q=85 ",
     "badge": "",
     "available": true
   },
@@ -86,7 +86,7 @@ export const seedMenu = [
     "category": "Food",
     "description": "Juicy beef patty in a soft bun, served with golden chips.",
     "price": 68,
-    "image": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=85",
+    "image": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=85 ",
     "badge": "",
     "available": true
   },
@@ -95,7 +95,7 @@ export const seedMenu = [
     "category": "Food",
     "description": "Fresh seasonal vegetables and a creamy dressing in a soft wrap.",
     "price": 45,
-    "image": "",
+    "image": "https://www.superhealthykids.com/wp-content/uploads/2014/07/veggie-wrap-featured-image-square-1.jpg",
     "badge": "",
     "available": true
   },
@@ -104,7 +104,7 @@ export const seedMenu = [
     "category": "Other",
     "description": "Still spring water, 500ml.",
     "price": 12,
-    "image": "",
+    "image": "https://th.bing.com/th/id/OIP.XqiZafpJ3cQUUsPVvntD4gHaHa?w=155&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3",
     "badge": "",
     "available": true
   },
@@ -113,7 +113,7 @@ export const seedMenu = [
     "category": "Other",
     "description": "Chilled fruit juice, 330ml.",
     "price": 22,
-    "image": "",
+    "image": "https://tse3.mm.bing.net/th/id/OIP.WciVJ0f4jemDthCmR23nRAHaEK?r=0&rs=1&pid=ImgDetMain&o=7&rm=3",
     "badge": "",
     "available": true
   }
