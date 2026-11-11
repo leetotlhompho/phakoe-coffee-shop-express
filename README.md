@@ -8,12 +8,12 @@ staff manage the menu and move orders through their stages; the administrator ma
 | | Link |
 |---|---|
 | GitHub repository | https://github.com/leetotlhompho/phakoe-coffee-shop-express |
-| Deployed frontend (React, Vercel / Netlify) | `PASTE-YOUR-FRONTEND-URL-HERE` |
-| Deployed backend API (Express, Render) | `PASTE-YOUR-BACKEND-URL-HERE`  (health check: `/api/health`) |
+| Deployed frontend (React, Vercel / Netlify) | https://phakoe-coffee-shop-express.vercel.app |
+| Deployed backend API (Express, Render) | https://phakoe-coffee-shop-express-api.onrender.com  (health check: https://phakoe-coffee-shop-express-api.onrender.com/api/health) |
 
 ```
 React (Vercel / Netlify)  --fetch-->  Express.js REST API (Render)  -->  Key-value NoSQL database (Redis)
-        /frontend                              /backend                          (Upstash)
+        /frontend                              /backend                          (Redis Cloud)
 ```
 
 ## Technologies
@@ -22,8 +22,20 @@ React (Vercel / Netlify)  --fetch-->  Express.js REST API (Render)  -->  Key-val
 |---|---|---|
 | Frontend | React 18, Vite, React Router, lucide-react icons, plain CSS | Vercel or Netlify |
 | Backend | Node.js, Express.js (REST API), scrypt password hashing, signed bearer tokens (HS256) | Render |
-| Database | Key-value NoSQL: **Redis** (Upstash, persistent) via `ioredis`; a JSON-file key-value store is used for local development | Upstash |
+| Database | Key-value NoSQL: **Redis** (Redis Cloud) via `ioredis`; a JSON-file key-value store is used for local development | Redis Cloud |
 | Tests | Node's built-in test runner (`node --test`) | - |
+
+## Default login (administrator)
+
+Use this account to open the staff dashboard at `/staff` (live site: https://phakoe-coffee-shop-express.vercel.app/staff):
+
+| | |
+|---|---|
+| Email | `admin@brewhaven.local` |
+| Password | `1234567890` |
+
+After signing in, the dashboard shows a reminder, and the **Change password** tab lets the administrator replace this
+starting password. On the live site this account is created from the `ADMIN_EMAIL` and `ADMIN_PASSWORD` settings on Render.
 
 ## Features
 
@@ -74,7 +86,7 @@ npm install
 npm run dev               # http://localhost:5173
 ```
 
-**4. Sign in** at `/staff` with the development administrator `admin@brewhaven.local` / `Admin123!`
+**4. Sign in** at `/staff` with the development administrator `admin@brewhaven.local` / `1234567890`
 (created automatically on first start; the sample menu is loaded once at the same time).
 
 **5. Run the tests**
@@ -110,7 +122,7 @@ Every record is a JSON value stored under a unique key:
 | `email:<address>` | lookup from an email address to its user |
 
 - **Unique keys:** menu items and users get a random UUID. Orders get a short readable number such as `BH-7K3M9Q`, created with an atomic "only if the key does not exist" write, so two orders can never share a number.
-- **Persistence:** with `REDIS_URL` set, all data lives in Redis (Upstash), outside the web server, so it survives restarts and redeploys. Without it, the API falls back to a JSON file (development only; Render's free disk is wiped on restart).
+- **Persistence:** with `REDIS_URL` set, all data lives in Redis (Redis Cloud), outside the web server, so it survives restarts and redeploys. Without it, the API falls back to a JSON file (development only; Render's free disk is wiped on restart).
 
 ## REST API
 
@@ -167,12 +179,14 @@ A menu item's `image` can be:
 
 ## Deployment
 
-1. **Database (Upstash):** create a free Redis database at https://upstash.com and copy its `rediss://...` connection URL.
+1. **Database (Redis Cloud):** create a free Redis database at https://redis.io/try-free. On the database's *Connect* panel, copy the connection address, which looks like `redis://default:PASSWORD@HOST:PORT` (Upstash is an alternative; its address starts with `rediss://`).
 2. **API (Render):** *New > Blueprint* and choose the repository (it reads `render.yaml`), or create a Web Service with root directory `backend`, build command `npm install`, start command `npm start`. Set `NODE_ENV=production`, `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `REDIS_URL` and `ALLOWED_ORIGINS`. Check `https://<your-api>.onrender.com/api/health`.
 3. **Website (Vercel or Netlify):** root/base directory `frontend`, build command `npm run build`, output directory `dist`, environment variable `VITE_API_URL=https://<your-api>.onrender.com`. (`vercel.json` and `public/_redirects` make page refreshes work.)
 4. Put the website's final address into `ALLOWED_ORIGINS` on Render (no trailing `/`) so the API accepts it. Redeploy the website whenever `VITE_API_URL` changes, because it is built into the site.
 
-Notes: Render's free web service sleeps after about 15 minutes without visitors, so the first request afterwards can take about a minute. Render's own free Key Value instance is memory-only and loses its data on restart, so use Upstash (or a paid Render Key Value instance) for persistence.
+Live deployment: frontend on Vercel, API on Render, data in Redis Cloud (`REDIS_URL`).
+
+Notes: Render's free web service sleeps after about 15 minutes without visitors, so the first request afterwards can take about a minute. Render's own free Key Value instance is memory-only and loses its data on restart, so use an external Redis such as Redis Cloud or Upstash (or a paid Render Key Value instance) for persistence.
 
 ## Limits
 
