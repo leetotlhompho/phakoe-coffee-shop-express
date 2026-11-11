@@ -5,7 +5,7 @@ export const seedMenu = [
     "category": "Coffee",
     "description": "Double espresso with steamed milk and a soft layer of foam.",
     "price": 35,
-    "image": " https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=900&q=85",
+    "image": "https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=900&q=85",
     "badge": "Bestseller",
     "available": true
   },
