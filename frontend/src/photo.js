@@ -4,6 +4,7 @@
  *  - a file in the project's images folder, e.g. "images/water.jpg", becomes "/images/water.jpg"
  */
 export function photoSrc(image) {
+  image = typeof image === "string" ? image.trim() : "";
   if (!image) return "";
   if (/^(https?:|data:|blob:)/i.test(image)) return image;
   const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
